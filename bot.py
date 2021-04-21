@@ -105,8 +105,10 @@ and the channel is updated regularly to reflect the status of extensions and the
 
 
 bot = TachiBoti()
+"""
 token = os.environ.get('TOKEN')
 if token is None:
     with open("token") as f:
         token = f.readline()
-bot.run(token)
+"""
+bot.run("ODI4MjgwNTE1NTYyODMxOTMz.YGnSVw.sD4mkYTfqqEgWCA1nmOHM56PfT8")
