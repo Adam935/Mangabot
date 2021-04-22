@@ -89,26 +89,30 @@ class TachiBoti(discord.Client):
         print("~-~-~-~-~-~-~-~-~-~-~")
         print("Ready!")
 
+"""
     async def on_member_join(self, member):
         if member.guild.id != self.tachi_id:
             return
         try:
             await member.send("""
+            """
 Welcome to Tachiyomi!\n
 Before asking anything in <#349436576037732355>, please make sure to check the <#403520500443119619> channel, \
 there's a very high chance you won't even have to ask.
 Most if not all entries in <#403520500443119619> are up to date, \
 and the channel is updated regularly to reflect the status of extensions and the app in general.
-            """)  # noqa
+            """ """)  # noqa
+        
         except discord.errors.Forbidden:  # Can't DM member, give up.
             pass
+"""
 
 
 bot = TachiBoti()
-"""
+
 token = os.environ.get('TOKEN')
 if token is None:
-    with open("token") as f:
+    with open("token.txt") as f:
         token = f.readline()
-"""
-bot.run("ODI4MjgwNTE1NTYyODMxOTMz.YGnSVw.sD4mkYTfqqEgWCA1nmOHM56PfT8")
+
+bot.run(token)
