@@ -95,7 +95,7 @@ class TachiBoti(discord.Client):
             return
         try:
             await member.send("""
-            """
+"""
 Welcome to Tachiyomi!\n
 Before asking anything in <#349436576037732355>, please make sure to check the <#403520500443119619> channel, \
 there's a very high chance you won't even have to ask.
