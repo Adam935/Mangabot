@@ -1,5 +1,6 @@
 import os
 import re
+import html
 import textwrap
 
 import discord
@@ -22,15 +23,18 @@ class TachiBoti(discord.Client):
         self.klient = kadal.Klient(loop=self.loop)
         self.anilist_cover_url = "https://img.anili.st/media/"
 
+    @staticmethod
+    def get_title(media):
+        return (media.title.get("english")
+                or media.title.get("romaji")
+                or media.title.get("native"))
+
     async def format_embed(self, name, media, method, *, allow_adult):
         try:
             media = await method(name, popularity=True, allow_adult=allow_adult)
         except kadal.MediaNotFound:
             return
 
-        title = (media.title.get("english")
-                 or media.title.get("romaji")
-                 or media.title.get("native"))
         desc = "***" + ", ".join(media.genres) + "***\n"
         if media.description is not None:
             short_desc = textwrap.shorten(media.description, width=256 - len(desc), placeholder="")
@@ -41,13 +45,19 @@ class TachiBoti(discord.Client):
             (r"</?br/?>", "\n")
         ]
         for regex, regex_replace in replacements:
-            desc = re.sub(regex, regex_replace, desc, flags=re.I | re.M)
+            desc = html.unescape(re.sub(regex, regex_replace, desc, flags=re.I | re.M))
         footer = re.sub(r".*\.", "", str(media.format))
+        footer_text = footer.replace("TV", "ANIME").replace("_", " ").title()
+        if len(footer_text) <= 3:
+            footer_text = footer_text.upper()
+        status = re.sub(r".*\.", "", str(media.status))
+        status_text = status.replace("_", " ").capitalize()
 
         color_hex = media.cover_color or "2F3136"
         embed_color = int(color_hex.lstrip('#'), 16)
+        title = self.get_title(media)
         e = discord.Embed(title=title, description=desc, color=embed_color)
-        e.set_footer(text=footer.replace("TV", "ANIME").capitalize(),
+        e.set_footer(text=f"{footer_text} • {status_text}",
                      icon_url="https://anilist.co/img/logo_al.png")
         e.set_image(url=f"{self.anilist_cover_url}{media.id}")
         if any(media.start_date.values()):
@@ -59,23 +69,28 @@ class TachiBoti(discord.Client):
         m = regex.findall(message.clean_content)
         m_clean = list(filter(bool, m))
         if m_clean:
-            if len(m_clean) > 1:
-                fmt = ""
-                for name in m_clean:
-                    try:
-                        media = await search_method(name, popularity=True, allow_adult=allow_adult)
-                        fmt += "<" + media.site_url + ">\n"
-                    except kadal.MediaNotFound:
-                        pass
-                await message.channel.send(fmt)
-            else:
-                async with message.channel.typing():
+            async with message.channel.typing():
+                embed = discord.Embed()
+                if len(m_clean) > 1:
+                    fmt = ""
+                    for name in m_clean:
+                        try:
+                            media = await search_method(name, popularity=True, allow_adult=allow_adult)
+                            title = self.get_title(media)
+                            fmt += f"[**{title}**]({media.site_url})\n"
+                        except kadal.MediaNotFound:
+                            pass
+                    embed.description = fmt
+                    embed.color = discord.Color(0x2f3136)
+                else:
                     embed = await self.format_embed(m_clean[0], media, search_method, allow_adult=allow_adult)
                     if not embed:
                         return
-                    await message.channel.send(embed=embed)
+                await message.channel.send(embed=embed)
 
     async def on_message(self, message):
+        if message.author.bot: # Ignore other bots messages
+            return
         if message.author == self.user:  # Ignore own messages
             return
         for media, regex in self.regex.items():
